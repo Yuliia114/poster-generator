@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBIS Poster Creator — Конструктор рекламних плакатів</title>
+  
+  <!-- Шрифти для інтерфейсу та плакатів -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Бібліотека для знімків екрану (PNG експорт) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* --- ОСНОВНІ СТИЛІ ІНТЕРФЕЙСУ (DARK CYBERPUNK) --- */
+    :root {
+      --bg-editor: #090d16;
+      --panel-bg: rgba(23, 33, 51, 0.65);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-color: #00f0ff;
+      --accent-success: #00e676;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      
+      /* Шрифти */
+      --font-ui: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-editor);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Шапка конструктора */
+    header.app-header {
+      background: rgba(13, 19, 30, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      height: 70px;
+    }
+
+    .app-logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      background: linear-gradient(135deg, #00f0ff, #7000ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-logo span {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #00f0ff;
+      -webkit-text-fill-color: #00f0ff;
+    }
+
+    .app-tagline {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Основний контейнер */
+    .app-workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 70px);
+      overflow: hidden;
+    }
+
+    /* Ліва панель: Налаштування */
+    .sidebar {
+      width: 440px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(15px);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 5;
+    }
+
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(9, 13, 22, 0.4);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 14px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-bottom: 2px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-control {
+      width: 100%;
+      background: rgba(9, 13, 22, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 10px 14px;
+      font-size: 14px;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    .input-control:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+    }
+
+    textarea.input-control {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
+    }
+
+    .checkbox-label input {
+      margin-top: 3px;
+      accent-color: var(--accent-color);
+    }
+
+    /* Вибір кольору */
+    .color-pickers {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(9, 13, 22, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .color-picker-wrapper input[type="color"] {
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+    }
+
+    .color-picker-wrapper span {
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    /* Радіо-група як кнопки */
+    .radio-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .radio-btn-label {
+      cursor: pointer;
+    }
+
+    .radio-btn-label input {
+      display: none;
+    }
+
+    .radio-btn-content {
+      background: rgba(9, 13, 22, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.3s;
+    }
+
+    .radio-btn-label input:checked + .radio-btn-content {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    /* Експорт бар */
+    .sidebar-footer {
+      padding: 20px 25px;
+      border-top: 1px solid var(--border-color);
+      background: rgba(9, 13, 22, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #00f0ff, #0070ff);
+      color: #05162e;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 240, 255, 0.5);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Права область: Попередній перегляд плаката */
+    .preview-area {
+      flex: 1;
+      background: radial-gradient(circle, #101827 0%, #05080e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: auto;
+      padding: 40px;
+    }
+
+    /* Контейнер з масштабуванням */
+    .canvas-wrapper {
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      transform-origin: center center;
+      transition: transform 0.2s ease-out;
+    }
+
+    /* --- СТИЛІ САМОГО ПЛАКАТА --- */
+    #poster-canvas {
+      background-color: #0b111e;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--text-color, #ffffff);
+      box-sizing: border-box;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+      
+      /* Дефолтні кольори (можуть перевизначатися JS-змінними) */
+      --poster-bg-1: #090d16;
+      --poster-bg-2: #141f36;
+      --accent: #00f0ff;
+      --accent-sub: #00e676;
+      --text-color: #ffffff;
+      --text-muted-color: #a0aec0;
+      --border-color-poster: rgba(255, 255, 255, 0.1);
+      
+      background: linear-gradient(135deg, var(--poster-bg-1) 0%, var(--poster-bg-2) 100%);
+    }
+
+    #poster-canvas::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: var(--poster-bg-texture, none);
+      background-size: cover;
+      background-position: center;
+      opacity: var(--poster-texture-opacity, 0);
+      mix-blend-mode: var(--poster-texture-blend, normal);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ефекти фонового світіння на плакаті */
+    .poster-glow-1 {
+      position: absolute;
+      top: -10%;
+      right: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .poster-glow-2 {
+      position: absolute;
+      bottom: -10%;
+      left: -10%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(112, 0, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Фонове зображення / ілюстрація */
+    .poster-bg-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      z-index: 2;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    /* Загальні елементи макета */
+    .poster-header {
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .poster-badge {
+      background-color: var(--accent-sub);
+      color: #032110;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 50px;
+      box-shadow: 0 4px 10px rgba(0, 230, 118, 0.2);
+    }
+
+    .poster-org {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 1.5px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+    }
+
+    .poster-main {
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex-grow: 1;
+    }
+
+    /* Відцентровування контенту, коли фото на фоні (немає спліт-режиму) */
+    #poster-canvas:not(.with-photo-split) .poster-main {
+      align-items: center;
+      text-align: center;
+    }
+    #poster-canvas:not(.with-photo-split) .poster-grid {
+      justify-content: center;
+    }
+    #poster-canvas:not(.with-photo-split) .bilingual-split {
+      justify-content: center;
+      margin: 0 auto;
+    }
+    #poster-canvas:not(.with-photo-split) .poster-header {
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .poster-target-group {
+      font-weight: 600;
+      color: var(--text-muted-color);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .poster-title-pl {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      color: var(--accent);
+      text-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+    }
+
+    .poster-title-ua {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      color: var(--text-color, #ffffff);
+      opacity: 1;
+    }
+
+    /* Візуальна сітка для характеристик або контенту з фото */
+    .poster-grid {
+      z-index: 5;
+      display: flex;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .poster-feature-card {
+      background: var(--card-bg, rgba(23, 33, 51, 0.45));
+      border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .feature-card-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .feature-card-text {
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--card-text, #e2e8f0);
+    }
+
+    /* Спліт-колаж для фото */
+    .poster-photo-container {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      filter: brightness(1.08) saturate(1.18) contrast(1.02);
+    }
+    
+    .poster-photo-container::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom, rgba(13,19,30,0) 60%, rgba(13,19,30,0.35) 100%);
+    }
+
+    /* Підвал: Офіційні емблеми ЄС та Dolny Śląsk */
+    .eu-logos-footer {
+      background: #ffffff;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      padding: 10px 15px;
+      z-index: 5;
+    }
+
+    .eu-logos-header {
+      background: #ffffff;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      padding: 8px 12px;
+      z-index: 5;
+      height: 48px;
+      max-width: 400px;
+      margin-left: auto;
+    }
+
+    .eu-logos-header .eu-logo-img {
+      height: 36px;
+      max-width: 45%;
+      object-fit: contain;
+    }
+
+    .eu-logos-footer-small {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+      z-index: 5;
+    }
+
+    .eu-logos-footer-small .eu-logo-img {
+      height: 40px;
+      max-height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .eu-logos-footer-small span {
+      font-size: 11px !important;
+    }
+
+    .eu-logo-img {
+      height: 48px;
+      max-width: 42%;
+      object-fit: contain;
+    }
+
+    .poster-footer {
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      align-items: center;
+      border-top: 1px solid var(--border-color-poster, rgba(255, 255, 255, 0.1));
+      color: var(--text-muted-color);
+      width: 100%;
+    }
+
+    .poster-footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .poster-footer-label {
+      color: var(--text-color, #ffffff);
+      font-weight: 700;
+    }
+
+    .poster-footer-label.cyan {
+      color: var(--accent);
+    }
+
+    .footer-contacts-list {
+      display: flex;
+      gap: 15px 25px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-start;
+    }
+
+    /* --- СПЕЦИФІЧНІ СТИЛІ ФОРМАТІВ --- */
+    
+    /* 1. Формат Telegram (16:9) — 1280x720 */
+    #poster-canvas.format-16-9 {
+      width: 1280px;
+      height: 720px;
+      padding: 30px 60px;
+    }
+    #poster-canvas.format-16-9 .poster-header {
+      margin-bottom: 10px;
+    }
+    #poster-canvas.format-16-9 .poster-org {
+      padding: 8px 18px;
+      font-size: 20px;
+    }
+    #poster-canvas.format-16-9 .poster-badge {
+      padding: 8px 18px;
+      font-size: 16px;
+    }
+    #poster-canvas.format-16-9 .poster-target-group {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+    #poster-canvas.format-16-9 .poster-title-pl {
+      font-size: 42px;
+      line-height: 1.15;
+    }
+    #poster-canvas.format-16-9 .poster-title-ua {
+      font-size: 26px;
+      margin-top: 6px;
+    }
+    #poster-canvas.format-16-9 .poster-grid {
+      margin-top: 15px;
+      flex-direction: row;
+    }
+    #poster-canvas.format-16-9 .poster-feature-card {
+      flex: 1;
+      padding: 16px 20px;
+    }
+    #poster-canvas.format-16-9 .feature-card-text {
+      font-size: 16px;
+    }
+    #poster-canvas.format-16-9 .poster-footer {
+      margin-top: auto;
+      padding-top: 18px;
+      font-size: 18px;
+    }
+
+    /* 2. Формат Instagram (1:1) — 1080x1080 */
+    #poster-canvas.format-1-1 {
+      width: 1080px;
+      height: 1080px;
+      padding: 60px 60px;
+    }
+    #poster-canvas.format-1-1 .poster-org {
+      padding: 10px 20px;
+      font-size: 20px;
+    }
+    #poster-canvas.format-1-1 .poster-badge {
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+    #poster-canvas.format-1-1 .poster-target-group {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    #poster-canvas.format-1-1 .poster-title-pl {
+      font-size: 46px;
+      line-height: 1.15;
+    }
+    #poster-canvas.format-1-1 .poster-title-ua {
+      font-size: 30px;
+      margin-top: 10px;
+    }
+    #poster-canvas.format-1-1 .poster-grid {
+      margin-top: 30px;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #poster-canvas.format-1-1 .poster-feature-card {
+      padding: 14px 16px;
+    }
+    #poster-canvas.format-1-1 .feature-card-text {
+      font-size: 19px;
+    }
+    #poster-canvas.format-1-1 .poster-footer {
+      margin-top: auto;
+      padding-top: 22px;
+      font-size: 19px;
+    }
+
+    /* 3. Формат OLX (4:3) — 1024x768 */
+    #poster-canvas.format-4-3 {
+      width: 1024px;
+      height: 768px;
+      padding: 50px 50px;
+    }
+    #poster-canvas.format-4-3 .poster-org {
+      padding: 8px 16px;
+      font-size: 18px;
+    }
+    #poster-canvas.format-4-3 .poster-badge {
+      padding: 8px 16px;
+      font-size: 15px;
+    }
+    #poster-canvas.format-4-3 .poster-target-group {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    #poster-canvas.format-4-3 .poster-title-pl {
+      font-size: 38px;
+      line-height: 1.15;
+    }
+    #poster-canvas.format-4-3 .poster-title-ua {
+      font-size: 24px;
+      margin-top: 8px;
+    }
+    #poster-canvas.format-4-3 .poster-grid {
+      margin-top: 25px;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    #poster-canvas.format-4-3 .poster-feature-card {
+      flex: 1 1 calc(50% - 10px);
+      padding: 16px 20px;
+    }
+    #poster-canvas.format-4-3 .feature-card-text {
+      font-size: 16px;
+    }
+    #poster-canvas.format-4-3 .poster-footer {
+      margin-top: auto;
+      padding-top: 18px;
+      font-size: 17px;
+    }
+
+    /* 4. Формат Stories (9:16) — 1080x1920 */
+    #poster-canvas.format-9-16 {
+      width: 1080px;
+      height: 1920px;
+      padding: 100px 70px;
+    }
+    #poster-canvas.format-9-16 .poster-header {
+      margin-bottom: 50px;
+    }
+    #poster-canvas.format-9-16 .poster-org {
+      padding: 12px 24px;
+      font-size: 22px;
+    }
+    #poster-canvas.format-9-16 .poster-badge {
+      padding: 12px 24px;
+      font-size: 20px;
+    }
+    #poster-canvas.format-9-16 .poster-main {
+      justify-content: flex-start;
+      margin-top: 60px;
+    }
+    #poster-canvas.format-9-16 .poster-target-group {
+      font-size: 22px;
+      margin-bottom: 25px;
+    }
+    #poster-canvas.format-9-16 .poster-title-pl {
+      font-size: 64px;
+      line-height: 1.2;
+    }
+    #poster-canvas.format-9-16 .poster-title-ua {
+      font-size: 40px;
+      margin-top: 25px;
+    }
+    #poster-canvas.format-9-16 .poster-grid {
+      margin-top: 80px;
+      flex-direction: column;
+      gap: 25px;
+    }
+    #poster-canvas.format-9-16 .poster-feature-card {
+      padding: 24px 30px;
+    }
+    #poster-canvas.format-9-16 .feature-card-text {
+      font-size: 22px;
+    }
+    #poster-canvas.format-9-16 .poster-footer {
+      margin-top: auto;
+      padding-top: 35px;
+      font-size: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    #poster-canvas.format-9-16 .footer-contacts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: flex-start;
+    }
+    #poster-canvas.format-9-16 .footer-logos-container {
+      width: 100%;
+      justify-content: flex-start;
+      margin-top: 10px;
+    }
+
+    /* Модифікатор для фото-версії */
+    .with-photo-split.format-16-9 .poster-content-layout {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr;
+      gap: 30px;
+      align-items: stretch;
+      width: 100%;
+    }
+    .with-photo-split.format-16-9 .poster-photo-container {
+      height: 400px;
+      width: 100%;
+      margin-top: 70px;
+    }
+
+    /* Альтернативний макет для 16:9 з однією мовою (фото знизу) */
+    .single-lang-mode.with-photo-split.format-16-9 .poster-content-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    .single-lang-mode.with-photo-split.format-16-9 .poster-photo-container {
+      height: 220px;
+      margin-top: 15px;
+    }
+
+    .with-photo-split.format-1-1 .poster-content-layout {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 30px;
+      width: 100%;
+      height: 100%;
+    }
+    .with-photo-split.format-1-1 .poster-photo-container {
+      height: 250px;
+      width: 100%;
+    }
+
+    .with-photo-split.format-4-3 .poster-content-layout {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr;
+      gap: 25px;
+      align-items: center;
+      width: 100%;
+    }
+    .with-photo-split.format-4-3 .poster-photo-container {
+      height: 280px;
+      width: 100%;
+    }
+    
+    .single-lang-mode.with-photo-split.format-4-3 .poster-content-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      align-items: stretch;
+    }
+    .single-lang-mode.with-photo-split.format-4-3 .poster-photo-container {
+      height: 200px;
+      margin-top: 15px;
+    }
+
+    .with-photo-split.format-9-16 .poster-photo-container {
+      height: 320px;
+      width: 100%;
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+
+    /* 5. Формат Facebook Ad (1.91:1) — 1200x628 */
+    #poster-canvas.format-fb-ad {
+      width: 1200px;
+      height: 628px;
+      padding: 40px 50px;
+    }
+    #poster-canvas.format-fb-ad .poster-header {
+      margin-bottom: 15px;
+    }
+    #poster-canvas.format-fb-ad .poster-org {
+      padding: 6px 14px;
+      font-size: 18px;
+    }
+    #poster-canvas.format-fb-ad .poster-badge {
+      padding: 6px 14px;
+      font-size: 14px;
+    }
+    #poster-canvas.format-fb-ad .poster-target-group {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    #poster-canvas.format-fb-ad .poster-title-pl {
+      font-size: 38px;
+      line-height: 1.15;
+    }
+    #poster-canvas.format-fb-ad .poster-title-ua {
+      font-size: 24px;
+      margin-top: 6px;
+    }
+    #poster-canvas.format-fb-ad .poster-grid {
+      margin-top: 25px;
+      flex-direction: row;
+    }
+    #poster-canvas.format-fb-ad .poster-feature-card {
+      flex: 1;
+      padding: 14px 18px;
+    }
+    #poster-canvas.format-fb-ad .feature-card-text {
+      font-size: 14px;
+    }
+    #poster-canvas.format-fb-ad .poster-footer {
+      margin-top: auto;
+      padding-top: 15px;
+      font-size: 16px;
+    }
+    .with-photo-split.format-fb-ad .poster-content-layout {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr;
+      gap: 25px;
+      align-items: center;
+      width: 100%;
+    }
+    .with-photo-split.format-fb-ad .poster-photo-container {
+      height: 200px;
+      width: 100%;
+    }
+    
+    .single-lang-mode.with-photo-split.format-fb-ad .poster-content-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      align-items: stretch;
+    }
+    .single-lang-mode.with-photo-split.format-fb-ad .poster-photo-container {
+      height: 150px;
+      margin-top: 15px;
+    }
+
+    /* Двомовні колонки (Єдина сітка для вирівнювання рядків по висоті) */
+    .bilingual-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 20px;
+      row-gap: 12px;
+      align-items: stretch;
+    }
+    
+    .poster-main {
+      display: flex;
+      flex-direction: column;
+      z-index: 5;
+      min-width: 0;
+    }
+
+    .bilingual-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bilingual-col-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 4px;
+      margin-bottom: 4px;
+    }
+
+    .poster-eu-info {
+      font-size: 11px;
+      line-height: 1.3;
+      color: var(--text-color, #ffffff);
+      opacity: 0.9;
+      max-width: 280px;
+      text-align: right;
+      margin-right: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+
+    /* Інструкції та сповіщення */
+    .info-alert {
+      background: rgba(0, 240, 255, 0.05);
+      border-left: 3px solid var(--accent-color);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .info-alert strong {
+      color: var(--accent-color);
+    }
+
+    /* Секції налаштувань */
+    .section-title {
+      font-size: 11px;
+      color: var(--accent-color);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin: 25px 0 12px 0;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    /* Повзунки для регулювання */
+    .range-slider {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .range-slider input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent-color);
+    }
+
+    .range-value {
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 35px;
+      text-align: right;
+    }
+
+    /* Стилізація кнопок завантаження файлу */
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .btn-file-upload {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+      display: block;
+      transition: all 0.3s;
+    }
+
+    .btn-file-upload:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-color: var(--accent-color);
+    }
+
+    .file-input-wrapper input[type="file"] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ШАПКА РЕДАКТОРА -->
+  <header class="app-header">
+    <div class="app-logo">
+      IBIS Poster Creator <span>v1.2</span>
+    </div>
+    <div class="app-tagline">
+      Професійні двомовні рекламні плакати для курсів
+    </div>
+  </header>
+
+  <!-- РОБОЧИЙ ПРОСТІР -->
+  <div class="app-workspace">
+    
+    <!-- ЛІВА ПАНЕЛЬ: НАЛАШТУВАННЯ -->
+    <div class="sidebar">
+      
+      <!-- Вкладки налаштувань -->
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" onclick="switchTab('content-tab', this)">Вміст</button>
+        <button class="tab-btn" onclick="switchTab('styling-tab', this)">Оформлення</button>
+        <button class="tab-btn" onclick="switchTab('conditions-tab', this)">Вимоги та Контакти</button>
+      </div>
+
+      <div class="sidebar-content">
+        
+        <!-- ВКЛАДКА 1: ВМІСТ -->
+        <div id="content-tab" class="tab-panel">
+          <div class="info-alert">
+            Оберіть формат макета, мову та курс. Тексти будуть автоматично перекладені відповідно до офіційних стандартів <strong>IBIS Instytut Badań i Szkoleń</strong>.
+          </div>
+
+          <div class="section-title">1. Формат та Мова</div>
+          
+          <div class="form-group">
+            <label>Формат (Розмір плаката)</label>
+            <div class="radio-buttons">
+              <label class="radio-btn-label">
+                <input type="radio" name="format-select" value="16-9" checked onchange="updateFormat()">
+                <div class="radio-btn-content">Telegram (16:9)</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="format-select" value="1-1" onchange="updateFormat()">
+                <div class="radio-btn-content">FB / Insta (1:1)</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="format-select" value="fb-ad" onchange="updateFormat()">
+                <div class="radio-btn-content">FB Ad (1.91:1)</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="format-select" value="4-3" onchange="updateFormat()">
+                <div class="radio-btn-content">OLX (4:3)</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="format-select" value="9-16" onchange="updateFormat()">
+                <div class="radio-btn-content">Stories (9:16)</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Мова відображення</label>
+            <div class="radio-buttons" style="grid-template-columns: repeat(3, 1fr);">
+              <label class="radio-btn-label">
+                <input type="radio" name="lang-select" value="ua" onchange="updateLanguage()">
+                <div class="radio-btn-content">UA</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="lang-select" value="pl" onchange="updateLanguage()">
+                <div class="radio-btn-content">PL</div>
+              </label>
+              <label class="radio-btn-label">
+                <input type="radio" name="lang-select" value="both" checked onchange="updateLanguage()">
+                <div class="radio-btn-content">UA + PL</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="section-title">2. Інформація про Курс</div>
+
+          <div class="form-group">
+            <label>Організація</label>
+            <input type="text" id="input-org" class="input-control" value="IBIS Instytut Badań i Szkoleń" oninput="updateText()" maxlength="40">
+          </div>
+
+          <div class="form-group">
+            <label>Шаблон Курсу</label>
+            <select id="course-preset" class="input-control" onchange="applyCoursePreset()">
+              <option value="ai">Штучний Інтелект (AI Specialist)</option>
+              <option value="social-media">Соціальні мережі та маркетинг</option>
+              <option value="custom">Свій варіант (редагування вручну)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Назва курсу (Польською) <span id="char-count-pl" style="float:right; font-size:11px; color:var(--text-muted);">0/80</span></label>
+            <textarea id="input-title-pl" class="input-control" oninput="updateText()" maxlength="80">SPECJALISTA DS. WYKORZYSTANIA SZTUCZNEJ INTELIGENCJI W BIZNESIE i administracji</textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Назва курсу (Українською) <span id="char-count-ua" style="float:right; font-size:11px; color:var(--text-muted);">0/80</span></label>
+            <textarea id="input-title-ua" class="input-control" oninput="updateText()" maxlength="80">Спеціаліст із використання штучного інтелекту в бізнесі та адміністрації</textarea>
+          </div>
+        </div>
+
+        <!-- ВКЛАДКА 2: ОФОРМЛЕННЯ -->
+        <div id="styling-tab" class="tab-panel" style="display: none;">
+          <div class="section-title">1. Готові Стилі</div>
+          
+          <div class="form-group">
+            <label>Колірна Тема</label>
+            <select id="theme-select" class="input-control" onchange="applyThemePreset()">
+              <option value="cyberpunk">Cyberpunk Neon (Темно-неоновий)</option>
+              <option value="emerald">Emerald & Gold (Смарагдово-золотий)</option>
+              <option value="corporate">Classic Corporate (Класичний корпоративний)</option>
+              <option value="sunset">Sunset Glow (Фіолетово-помаранчевий)</option>
+              <option value="light-prof">Light Professional (Світлий професійний)</option>
+              <option value="light-gray">Light Gray (Світло-сірий)</option>
+              <option value="light-blue">Light Blue (Світло-блакитний)</option>
+              <option value="tech-light">Tech Light (Світлий кібернетичний)</option>
+              <option value="neural-dark">Neural Dark (Темно-синій нейронний)</option>
+              <option value="custom">Своя тема (ручне налаштування)</option>
+            </select>
+          </div>
+
+          <div class="form-group custom-color-inputs" style="display: none;">
+            <label>Кастомні Кольори</label>
+            <div class="color-pickers">
+              <div class="color-picker-wrapper">
+                <input type="color" id="col-bg1" value="#090d16" onchange="updateColors()">
+                <span>Фон 1</span>
+              </div>
+              <div class="color-picker-wrapper">
+                <input type="color" id="col-bg2" value="#141f36" onchange="updateColors()">
+                <span>Фон 2</span>
+              </div>
+              <div class="color-picker-wrapper">
+                <input type="color" id="col-title" value="#00f0ff" onchange="updateColors()">
+                <span>Заголовок</span>
+              </div>
+              <div class="color-picker-wrapper">
+                <input type="color" id="col-accent" value="#00e676" onchange="updateColors()">
+                <span>Бейджі</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title">2. Розмір Шрифту заголовка</div>
+          <div class="form-group">
+            <div class="range-slider">
+              <input type="range" id="title-size-slider" min="20" max="80" value="48" oninput="updateFontSizeSlider()">
+              <span class="range-value" id="title-size-val">48px</span>
+            </div>
+          </div>
+
+          <div class="section-title">3. Зображення / Ілюстрація</div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="toggle-photo" onchange="updatePhotoLayout()" checked>
+              <span>Показувати ілюстрацію на плакаті</span>
+            </label>
+          </div>
+
+          <div id="photo-settings">
+            <div class="form-group">
+              <label>Режим фото</label>
+              <select id="photo-mode" class="input-control" onchange="updatePhotoLayout()">
+                <option value="split">Колаж (Зображення поруч із текстом)</option>
+                <option value="background">Фонове зображення (На весь екран)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Вибір ілюстрації</label>
+              <select id="photo-preset" class="input-control" onchange="applyPhotoPreset()">
+                <option value="laptop-local">Локальний ноутбук (laptop.png)</option>
+                <option value="classroom-laptop">Клас і ноутбук</option>
+                <option value="laptop-screen">Екран ноутбука</option>
+                <option value="gen-automation">Генерація автоматизація</option>
+                <option value="notebook">Ноутбук</option>
+                <option value="social-media">Social Media</option>
+                <option value="ai-hand">ШІ чип (Робо-рука)</option>
+                <option value="ai-brain">ШІ мозок (Нейромережа)</option>
+                <option value="custom">Завантажити власне фото...</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="custom-file-upload" style="display: none;">
+              <label>Завантажити файл з ПК</label>
+              <div class="file-input-wrapper">
+                <span class="btn-file-upload" id="file-name-label">Натисніть для вибору картинки</span>
+                <input type="file" id="input-photo" accept="image/*" onchange="handlePhotoUpload(this)">
+              </div>
+            </div>
+
+            <div class="form-group" id="photo-opacity-wrapper">
+              <label>Прозорість фото (тільки для режиму фону)</label>
+              <div class="range-slider">
+                <input type="range" id="photo-opacity" min="5" max="95" value="15" oninput="updatePhotoOpacity()">
+                <span class="range-value" id="photo-opacity-val">15%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ВКЛАДКА 3: ВИМОГИ ТА КОНТАКТИ -->
+        <div id="conditions-tab" class="tab-panel" style="display: none;">
+          <div class="section-title">1. Умови та Цільова аудиторія</div>
+
+          <div class="form-group">
+            <label>Текст акційного бейджа</label>
+            <input type="text" id="input-badge" class="input-control" value="БЕЗКОШТОВНО + СТИПЕНДІЯ" oninput="updateText()" maxlength="25">
+          </div>
+
+          <div class="form-group">
+            <label>Вимоги (чекбокси сформують список)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-age" checked onchange="updateText()">
+                <span>Молодь 18-29 років (Młodzież 18-29 lat)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-neet" checked onchange="updateText()">
+                <span>Не працює і не навчається (Osoby niepracujące i nieuczące się)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-location" checked onchange="updateText()">
+                <span>Мешканці Вроцлава та околиць (Mieszkańcy Wrocławia i okolic)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-stipend" checked onchange="updateText()">
+                <span>Стипендія за період навчання (Stypendium szkoleniowe)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-hours" checked onchange="updateText()">
+                <span>80 годин практики (80 godzin praktyki)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-career" onchange="updateText()">
+                <span>Кар'єрні консультації (Doradztwo zawodowe)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-mothers" onchange="updateText()">
+                <span>Для молодих матерів (Dla młodych matek do 30 r.ż.)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-intern" onchange="updateText()">
+                <span>Можливе оплачуване стажування (Możliwy płatny staż)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-cert" onchange="updateText()">
+                <span>Сертифікат про завершення (Certyfikat ukończenia)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-catering" onchange="updateText()">
+                <span>Кейтеринг та обіди (Catering i obiady)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-lang" onchange="updateText()">
+                <span>Знання польської мін. B1 (Zajęcia w j. polskim B1)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-ukr" onchange="updateText()">
+                <span>Громадяни України зі статусом UKR</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-age-65" onchange="updateText()">
+                <span>Вік: 18-65 років (Wiek: 18-65 lat)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-zlecenie" onchange="updateText()">
+                <span>Працюючі за umowa zlecenie (Osoby na umowie zlecenie)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-hours-weekend" onchange="updateText()">
+                <span>80 год. практики у вихідні (80 godz. praktyki w weekendy)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-improvement" onchange="updateText()">
+                <span>Покращення умов праці - без стажу (Ulepszenie warunków - bez stażu)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="cond-travel" onchange="updateText()">
+                <span>Компенсація витрат на доїзд (Zwrot kosztów dojazdu)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="section-title">2. Локація та Офіси</div>
+          
+          <div class="form-group">
+            <label>Місце проведення</label>
+            <select id="location-select" class="input-control" onchange="updateText()">
+              <option value="both">Вроцлав (Legnicka 32 або Kleczkowska 45)</option>
+              <option value="legnicka">Вроцлав, вул. Легницька 32 (ul. Legnicka 32)</option>
+              <option value="kleczkowska">Вроцлав, вул. Клечковська 45 (ul. Kleczkowska 45)</option>
+              <option value="custom">Власна адреса...</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="custom-location-wrapper" style="display: none;">
+            <label>Власний текст адреси</label>
+            <input type="text" id="input-location-custom" class="input-control" value="Вроцлав, вул. Легницька 32" oninput="updateText()" maxlength="60">
+          </div>
+
+          <div class="section-title">3. Обов'язкове маркування ЄС</div>
+          
+          <div class="form-group">
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="toggle-marking" checked onchange="updateMarking()">
+                <span>Показувати логотипи Fundusze Europejskie та Dolny Śląsk</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="marking-bottom" checked onchange="updateMarking()">
+                <span>Розміщувати маркування у підвалі (Footer)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="toggle-eu-info" checked onchange="updateMarking()">
+                <span>Показувати назву та номер проєкту (Projekt nr...)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="section-title">4. Контактна інформація</div>
+
+          <div class="form-group">
+            <label>Телефон</label>
+            <input type="text" id="input-phone" class="input-control" value="+48 882 047 914" oninput="updateText()" maxlength="20">
+          </div>
+          
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="text" id="input-email" class="input-control" value="ibisrekrutacja@gmail.com" oninput="updateText()" maxlength="30">
+          </div>
+
+          <div class="form-group" style="display: none;">
+            <label>Веб-сайт</label>
+            <input type="text" id="input-website" class="input-control" value="ibisinstytut.pl" oninput="updateText()" maxlength="25">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ФУТЕР БІЧНОЇ ПАНЕЛІ (КНОПКА ЗАВАНТАЖЕННЯ) -->
+      <div class="sidebar-footer">
+        <button class="btn-primary" onclick="exportPoster()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Завантажити плакат (PNG)
+        </button>
+        <button class="btn-secondary" onclick="resetForm()">Скинути до стандартних</button>
+      </div>
+
+    </div>
+
+    <!-- ПРАВА ПАНЕЛЬ: ЖИВИЙ ПЕРЕГЛЯД -->
+    <div class="preview-area">
+      <div class="canvas-wrapper" id="canvas-scaler">
+        
+        <!-- КАНВАС САМОГО ПЛАКАТА (Елемент, який буде фотографуватись) -->
+        <div id="poster-canvas" class="format-16-9 with-photo-split">
+          
+          <!-- Шари фону -->
+          <div class="poster-glow-1"></div>
+          <div class="poster-glow-2"></div>
+          <div class="poster-bg-image" id="poster-bg-img-el"></div>
+
+          <!-- ШАПКА ПЛАКАТА (Зберігає маркування, якщо воно вгорі) -->
+          <div class="poster-header" id="poster-header-el">
+            <div class="poster-badges-container" style="display: flex; gap: 10px;">
+              <div class="poster-badge" id="poster-badge-pl-el" style="display: none;">BEZPŁATNIE + STYPENDIUM</div>
+              <div class="poster-badge" id="poster-badge-el">БЕЗКОШТОВНО + СТИПЕНДІЯ</div>
+            </div>
+            <div class="poster-org" id="poster-org-el" style="padding: 6px 14px; font-size: 14px; font-weight: 800;">IBIS Instytut Badań i Szkoleń</div>
+          </div>
+
+          <!-- ОСНОВНА ЧАСТИНА (ВМІСТ + КОЛАЖ) -->
+          <div class="poster-content-layout">
+            
+            <!-- Ліва частина: Заголовки та опис -->
+            <div class="poster-main">
+              <div class="poster-target-group" id="poster-target-el" style="display: none;"></div>
+              
+              <!-- Мовні версії заголовка -->
+              <div class="poster-title-pl" id="poster-title-pl-el" style="margin-top: 10px;">SPECJALISTA DS. WYKORZYSTANIA SZTUCZNEJ INTELIGENCJI W BIZNESIE i administracji</div>
+              <div class="poster-title-ua" id="poster-title-ua-el" style="margin-top: 10px; font-weight: 600;">Спеціаліст із використання штучного інтелекту в бізнесі та адміністрації</div>
+              
+              <!-- Сітка вимог / Переваг (якщо немає фото або у горизонтальному варіанті) -->
+              <div class="poster-grid" id="poster-grid-el">
+                <!-- Заповнюється динамічно JS -->
+              </div>
+            </div>
+
+            <!-- Права частина: Ілюстративне зображення (показується при Split режимі) -->
+            <div class="poster-photo-container" id="poster-split-photo" style="background-image: url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&width=800&auto=format&fit=crop');"></div>
+
+          </div>
+
+          <!-- БЛОК МАРКУВАННЯ ЄВРОСОЮЗУ (Показується внизу або вгорі) -->
+          <div class="eu-logos-footer" id="eu-logos-container-el">
+            <div id="eu-info-text-el" class="poster-eu-info" style="display: none;">
+              Projekt: „Rozwiń skrzydła!”<br>
+              Dofinansowanie: UE (EFS+)<br>
+              Nr projektu: FEDS.07.05-IP.02-0180/24
+            </div>
+            <!-- Ці картинки завантажуються локально. Ми додаємо перевірку завантаження та альтернативний текст з прапором -->
+            <img class="eu-logo-img" id="eu-logo-img-el-1" alt="Fundusze Europejskie / Rzeczpospolita Polska" style="display: none;">
+            <span id="eu-text-fallback-1" style="display:none; color:#003399; font-weight:bold; font-size:14px; font-family:'Inter',sans-serif;">🇪🇺 Fundusze Europejskie / Unia Europejska</span>
+            
+            <img class="eu-logo-img" id="eu-logo-img-el-2" alt="Dolny Śląsk" style="display: none;">
+            <span id="eu-text-fallback-2" style="display:none; color:#d4af37; font-weight:bold; font-size:14px; font-family:'Inter',sans-serif;">🇵🇱 Dolny Śląsk</span>
+          </div>
+
+          <!-- ПІДВАЛ ПЛАКАТА (Контакти) -->
+          <div class="poster-footer" id="poster-footer-el">
+            <div class="footer-contacts-list">
+              <div class="poster-footer-item">
+                <span id="label-address-el">📍 Адреса:</span>
+                <span class="poster-footer-label" id="poster-location-el">Вроцлав (вул. Legnicka 32 або Kleczkowska 45)</span>
+              </div>
+              <div class="poster-footer-item">
+                <span id="label-phone-el">📞 Тел:</span>
+                <span class="poster-footer-label" id="poster-phone-el">+48 882 047 914</span>
+              </div>
+              <div class="poster-footer-item">
+                <span id="label-email-el">✉️ E-mail:</span>
+                <span class="poster-footer-label" id="poster-email-el">kontakt@ibisinstytut.pl</span>
+              </div>
+              <div class="poster-footer-item" style="display: none;">
+                <span id="label-website-el">🌐 Сайт:</span>
+                <span class="poster-footer-label cyan" id="poster-website-el">ibisinstytut.pl</span>
+              </div>
+            </div>
+            <div id="footer-logos-el" class="footer-logos-container" style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;"></div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ЛОГІКА JS -->
+  <script src="./images_base64.js"></script>
+  <script>
+    // --- ПРЕСЕТИ КУРСІВ ---
+    const COURSE_PRESETS = {
+      ai: {
+        titlePl: "SPECJALISTA DS. WYKORZYSTANIA SZTUCZNEJ INTELIGENCJI W BIZNESIE i administracji",
+        titleUa: "Спеціаліст із використання штучного інтелекту в бізнесі та адміністрації",
+        featuresPl: [
+          "🏫 Offline we Wrocławiu (80 godzin praktyki)",
+          "💰 Stypendium szkoleniowe dla każdego",
+          "💼 Możliwy płatny staż zawodowy"
+        ],
+        featuresUa: [
+          "🏫 Офлайн у Вроцлаві (80 годин практики)",
+          "💰 Навчальна стипендія для кожного",
+          "💼 Можливе оплачуване професійне стажування"
+        ]
+      },
+      "social-media": {
+        titlePl: "SPECJALISTA DS. SOCIAL MEDIA I MARKETINGU",
+        titleUa: "Спеціаліст із SMM та інтернет-маркетингу",
+        featuresPl: [
+          "📱 Budowanie marek, reklama i targetowanie",
+          "🏫 80 godzin zajęć praktycznych (Wrocław)",
+          "💰 Wsparcie stypendialne dla uczestników"
+        ],
+        featuresUa: [
+          "📱 Побудова брендів, реклама та таргет",
+          "🏫 80 годин практичних занять (Вроцлав)",
+          "💰 Стипендіальна підтримка для учасників"
+        ]
+      },
+      custom: {
+        titlePl: "NAZWA TWOJEGO KURSU PO POLSKU",
+        titleUa: "НАЗВА ВАШОГО КУРСУ УКРАЇНСЬКОЮ",
+        featuresPl: ["Cecha 1", "Cecha 2", "Cecha 3"],
+        featuresUa: ["Перевага 1", "Перевага 2", "Перевага 3"]
+      }
+    };
+
+    const PHOTO_PRESETS = {
+      "laptop-local": "./laptop.png",
+      "classroom-laptop": "./клас і ноутбук.png",
+      "laptop-screen": "./екран ноутбука.png",
+      "gen-automation": "./генерація автоматизація.png"
+    };
+
+    // --- КОЛІРНІ ТЕМИ ---
+    const THEMES = {
+      cyberpunk: {
+        bg1: "#090d16",
+        bg2: "#141f36",
+        title: "#00f0ff",
+        accent: "#00e676",
+        text: "#ffffff"
+      },
+      emerald: {
+        bg1: "#041a0f",
+        bg2: "#0d3621",
+        title: "#ffd700",
+        accent: "#ffffff",
+        text: "#f4fcf7"
+      },
+      corporate: {
+        bg1: "#0c1b2b",
+        bg2: "#1a365d",
+        title: "#00ffff",
+        accent: "#38bdf8",
+        text: "#f8fafc"
+      },
+      sunset: {
+        bg1: "#1d0e2e",
+        bg2: "#4a1525",
+        title: "#ffbc00",
+        accent: "#ff5e62",
+        text: "#fff5f5"
+      },
+      "light-prof": {
+        bg1: "#f1f5f9",
+        bg2: "#cbd5e1",
+        title: "#1e3a8a",
+        accent: "#2563eb",
+        text: "#0f172a"
+      },
+      "light-gray": {
+        bg1: "#f8fafc",
+        bg2: "#e2e8f0",
+        title: "#334155",
+        accent: "#475569",
+        text: "#0f172a"
+      },
+      "light-blue": {
+        bg1: "#f0fdfa",
+        bg2: "#e0f2fe",
+        title: "#0369a1",
+        accent: "#0284c7",
+        text: "#0f172a"
+      },
+      "tech-light": {
+        bg1: "#e0f2f1",
+        bg2: "#ffffff",
+        title: "#006064",
+        accent: "#00838f",
+        text: "#000000"
+      },
+      "neural-dark": {
+        bg1: "#0a192f",
+        bg2: "#020c1b",
+        title: "#64ffda",
+        accent: "#448aff",
+        text: "#e6f1ff"
+      }
+    };
+
+    // --- СТАН ДОДАТКА ---
+    let currentPhotoUrl = "";
+
+    // Запуск ініціалізації при завантаженні сторінки
+    window.onload = function() {
+      const logo1 = document.getElementById('eu-logo-img-el-1');
+      const logo2 = document.getElementById('eu-logo-img-el-2');
+      
+      const loadLogo = (imgEl, srcVal, fallbackId) => {
+        if (!imgEl) return;
+        imgEl.onload = function() {
+          this.style.display = 'block';
+          const fallback = document.getElementById(fallbackId);
+          if (fallback) fallback.style.display = 'none';
+        };
+        imgEl.onerror = function() {
+          this.style.display = 'none';
+          const fallback = document.getElementById(fallbackId);
+          if (fallback) fallback.style.display = 'block';
+        };
+        imgEl.src = srcVal;
+      };
+
+      // Завантаження base64 кодованих картинок для уникнення CORS помилок canvas
+      if (typeof IMAGES_BASE64 !== 'undefined') {
+        PHOTO_PRESETS["laptop-local"] = IMAGES_BASE64.laptop;
+        PHOTO_PRESETS["classroom-laptop"] = IMAGES_BASE64.classroom_laptop;
+        PHOTO_PRESETS["laptop-screen"] = IMAGES_BASE64.laptop_screen;
+        PHOTO_PRESETS["gen-automation"] = IMAGES_BASE64.gen_automation;
+        PHOTO_PRESETS["notebook"] = IMAGES_BASE64.notebook;
+        PHOTO_PRESETS["social-media"] = IMAGES_BASE64.social_media;
+        PHOTO_PRESETS["ai-hand"] = IMAGES_BASE64.ai_hand;
+        PHOTO_PRESETS["ai-brain"] = IMAGES_BASE64.ai_brain;
+        currentPhotoUrl = IMAGES_BASE64.laptop;
+        
+        loadLogo(logo1, IMAGES_BASE64.uniia, 'eu-text-fallback-1');
+        loadLogo(logo2, IMAGES_BASE64.dolny, 'eu-text-fallback-2');
+      } else {
+        PHOTO_PRESETS["laptop-local"] = "./foto AI/laptop.png";
+        PHOTO_PRESETS["classroom-laptop"] = "./foto AI/клас і ноутбук.png";
+        PHOTO_PRESETS["laptop-screen"] = "./foto AI/екран ноутбука.png";
+        PHOTO_PRESETS["gen-automation"] = "./foto AI/генерація автоматизація.png";
+        PHOTO_PRESETS["notebook"] = "./foto AI/ноутбук.png";
+        PHOTO_PRESETS["social-media"] = "./foto social media/social media.png";
+        PHOTO_PRESETS["ai-hand"] = "./foto AI/ai_hand.jpg";
+        PHOTO_PRESETS["ai-brain"] = "./foto AI/ai_brain.png";
+        currentPhotoUrl = "./foto AI/laptop.png";
+        
+        loadLogo(logo1, "./Uniia.jfif", 'eu-text-fallback-1');
+        loadLogo(logo2, "./Dolny slask.jfif", 'eu-text-fallback-2');
+      }
+
+      applyCoursePreset();
+      applyThemePreset();
+      updateFormat();
+      updatePhotoLayout();
+      updateMarking();
+      
+      // Налаштування масштабування canvas під розмір вікна браузера
+      window.addEventListener('resize', scaleCanvasToFit);
+      setTimeout(scaleCanvasToFit, 100);
+    };
+
+    // Перемикання вкладок в бічній панелі
+    function switchTab(tabId, element) {
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.style.display = 'none';
+      });
+      document.getElementById(tabId).style.display = 'block';
+      
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      element.classList.add('active');
+    }
+
+    // Застосування пресету курсу
+    function applyCoursePreset() {
+      const presetName = document.getElementById('course-preset').value;
+      const preset = COURSE_PRESETS[presetName];
+      
+      if (presetName !== 'custom') {
+        document.getElementById('input-title-pl').value = preset.titlePl;
+        document.getElementById('input-title-ua').value = preset.titleUa;
+        
+        // Автоматичний вибір фото залежно від курсу
+        const photoSelect = document.getElementById('photo-preset');
+        if (presetName === 'social-media') {
+          photoSelect.value = 'social-media';
+        } else if (presetName === 'ai') {
+          if (photoSelect.value === 'social-media') {
+            photoSelect.value = 'classroom-laptop'; // fallback if switching from social-media
+          }
+        }
+        applyPhotoPreset();
+      }
+      updateText();
+    }
+
+    // Застосування пресету теми
+    function applyThemePreset() {
+      const themeName = document.getElementById('theme-select').value;
+      const customInputs = document.querySelector('.custom-color-inputs');
+      
+      if (themeName === 'custom') {
+        customInputs.style.display = 'block';
+      } else {
+        customInputs.style.display = 'none';
+        const theme = THEMES[themeName];
+        document.getElementById('col-bg1').value = theme.bg1;
+        document.getElementById('col-bg2').value = theme.bg2;
+        document.getElementById('col-title').value = theme.title;
+        document.getElementById('col-accent').value = theme.accent;
+      }
+      updateColors();
+    }
+
+    // Оновлення кольорів плаката
+    function updateColors() {
+      const canvas = document.getElementById('poster-canvas');
+      const themeSelectVal = document.getElementById('theme-select').value;
+      const bg1 = document.getElementById('col-bg1').value;
+      const bg2 = document.getElementById('col-bg2').value;
+      const title = document.getElementById('col-title').value;
+      const accent = document.getElementById('col-accent').value;
+
+      canvas.style.setProperty('--poster-bg-1', bg1);
+      canvas.style.setProperty('--poster-bg-2', bg2);
+      canvas.style.setProperty('--accent', title);
+      canvas.style.setProperty('--accent-sub', accent);
+      
+      // Фонова текстура для нових тем
+      if (themeSelectVal === 'tech-light') {
+        canvas.style.setProperty('--poster-bg-texture', `url('${PHOTO_PRESETS["ai-hand"]}')`);
+        canvas.style.setProperty('--poster-texture-opacity', '0.15');
+        canvas.style.setProperty('--poster-texture-blend', 'multiply');
+      } else if (themeSelectVal === 'neural-dark') {
+        canvas.style.setProperty('--poster-bg-texture', `url('${PHOTO_PRESETS["ai-brain"]}')`);
+        canvas.style.setProperty('--poster-texture-opacity', '0.4');
+        canvas.style.setProperty('--poster-texture-blend', 'screen');
+      } else {
+        canvas.style.setProperty('--poster-bg-texture', 'none');
+        canvas.style.setProperty('--poster-texture-opacity', '0');
+        canvas.style.setProperty('--poster-texture-blend', 'normal');
+      }
+      
+      // Налаштування контрасту для тексту на світлому фоні
+      const isLightTheme = (themeSelectVal === 'light-prof' || themeSelectVal === 'light-gray' || themeSelectVal === 'light-blue' || themeSelectVal === 'tech-light' || bg1 === '#f1f5f9' || bg1 === '#f8fafc' || bg1 === '#f0fdfa' || bg1 === '#e0f2f1');
+      if (isLightTheme) {
+        canvas.style.setProperty('--text-color', '#0f172a');
+        canvas.style.setProperty('--text-muted-color', '#475569');
+        canvas.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.75)');
+        canvas.style.setProperty('--card-border', 'rgba(15, 23, 42, 0.12)');
+        canvas.style.setProperty('--card-text', '#1e293b');
+        canvas.style.setProperty('--border-color-poster', 'rgba(15, 23, 42, 0.15)');
+        
+        // Кольори для назви організації та маркування ЄС
+        const orgEl = document.getElementById('poster-org-el');
+        if (orgEl) {
+          orgEl.style.color = '#0f172a';
+          orgEl.style.borderColor = 'rgba(15, 23, 42, 0.3)';
+        }
+      } else {
+        canvas.style.setProperty('--text-color', '#ffffff');
+        canvas.style.setProperty('--text-muted-color', '#a0aec0');
+        canvas.style.setProperty('--card-bg', 'rgba(23, 33, 51, 0.45)');
+        canvas.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.08)');
+        canvas.style.setProperty('--card-text', '#e2e8f0');
+        canvas.style.setProperty('--border-color-poster', 'rgba(255, 255, 255, 0.1)');
+        
+        const orgEl = document.getElementById('poster-org-el');
+        if (orgEl) {
+          orgEl.style.color = '#ffffff';
+          orgEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        }
+      }
+
+      // Спеціальні корекції для кольору тексту бейджів
+      const badge = document.getElementById('poster-badge-el');
+      const badgePl = document.getElementById('poster-badge-pl-el');
+      const contrastColor = getContrastColor(accent);
+      badge.style.color = contrastColor;
+      if (badgePl) badgePl.style.color = contrastColor;
+    }
+
+    // Проста функція контрастності для тексту на кольоровому фоні
+    function getContrastColor(hexColor) {
+      const r = parseInt(hexColor.substr(1, 2), 16);
+      const g = parseInt(hexColor.substr(3, 2), 16);
+      const b = parseInt(hexColor.substr(5, 2), 16);
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return (yiq >= 128) ? '#052512' : '#ffffff';
+    }
+
+    // Оновлення мови плаката та умов
+    function updateLanguage() {
+      const lang = document.querySelector('input[name="lang-select"]:checked').value;
+      const badgeInput = document.getElementById('input-badge');
+      
+      if (lang === 'pl') {
+        if (badgeInput.value.trim().toUpperCase() === "БЕЗКОШТОВНО + СТИПЕНДІЯ") {
+          badgeInput.value = "BEZPŁATNIE + STYPENDIUM";
+        }
+      } else {
+        if (badgeInput.value.trim().toUpperCase() === "BEZPŁATNIE + STYPENDIUM") {
+          badgeInput.value = "БЕЗКОШТОВНО + СТИПЕНДІЯ";
+        }
+      }
+      
+      updateText();
+    }
+
+    // Оновлення текстового контенту на плакаті
+    function updateText() {
+      const lang = document.querySelector('input[name="lang-select"]:checked').value;
+      
+      const canvas = document.getElementById('poster-canvas');
+      if (lang === 'pl' || lang === 'ua') {
+        canvas.classList.add('single-lang-mode');
+      } else {
+        canvas.classList.remove('single-lang-mode');
+      }
+      
+      const org = document.getElementById('input-org').value;
+      const titlePl = document.getElementById('input-title-pl').value;
+      const titleUa = document.getElementById('input-title-ua').value;
+      const badgeText = document.getElementById('input-badge').value;
+      
+      // Елементи
+      const orgEl = document.getElementById('poster-org-el');
+      const titlePlEl = document.getElementById('poster-title-pl-el');
+      const titleUaEl = document.getElementById('poster-title-ua-el');
+      const badgeEl = document.getElementById('poster-badge-el');
+      const badgePlEl = document.getElementById('poster-badge-pl-el');
+      const targetEl = document.getElementById('poster-target-el');
+      
+      // Назва організації
+      orgEl.innerText = org;
+      
+      // Логіка відображення заголовків відповідно до мови
+      if (lang === 'pl') {
+        titlePlEl.style.display = 'block';
+        titleUaEl.style.display = 'none';
+        badgeEl.style.display = 'block';
+        badgePlEl.style.display = 'none';
+        badgeEl.innerText = badgeText;
+      } else if (lang === 'ua') {
+        titlePlEl.style.display = 'none';
+        titleUaEl.style.display = 'block';
+        badgeEl.style.display = 'block';
+        badgePlEl.style.display = 'none';
+        badgeEl.innerText = badgeText;
+      } else { // Both (Двомовний)
+        titlePlEl.style.display = 'block';
+        titleUaEl.style.display = 'block';
+        titleUaEl.style.fontSize = '0.7em'; 
+        
+        const badgeUpper = badgeText.trim().toUpperCase();
+        if (badgeUpper === "БЕЗКОШТОВНО + СТИПЕНДІЯ" || badgeUpper === "BEZPŁATNIE + STYPENDIUM") {
+          badgePlEl.style.display = 'block';
+          badgeEl.style.display = 'block';
+          badgePlEl.innerText = "BEZPŁATNIE + STYPENDIUM";
+          badgeEl.innerText = "БЕЗКОШТОВНО + СТИПЕНДІЯ";
+        } else {
+          // Якщо ввели якийсь нестандартний текст, виводимо його в одному бейджі
+          badgePlEl.style.display = 'none';
+          badgeEl.style.display = 'block';
+          badgeEl.innerText = badgeText;
+        }
+      }
+
+      // Відображення заголовків
+      titlePlEl.innerText = titlePl;
+      titleUaEl.innerText = titleUa;
+
+      // Формування списку характеристик/умов
+      const gridEl = document.getElementById('poster-grid-el');
+      gridEl.innerHTML = ''; // Очистка
+
+      const features = [];
+      const showAge = document.getElementById('cond-age').checked;
+      const showNeet = document.getElementById('cond-neet').checked;
+      const showLocation = document.getElementById('cond-location').checked;
+      const showStipend = document.getElementById('cond-stipend').checked;
+      const showHours = document.getElementById('cond-hours').checked;
+      const showCareer = document.getElementById('cond-career').checked;
+      const showMothers = document.getElementById('cond-mothers').checked;
+      const showIntern = document.getElementById('cond-intern').checked;
+      const showCatering = document.getElementById('cond-catering').checked;
+      const showCert = document.getElementById('cond-cert').checked;
+      const showLang = document.getElementById('cond-lang').checked;
+      const showUkr = document.getElementById('cond-ukr').checked;
+      const showAge65 = document.getElementById('cond-age-65').checked;
+      const showZlecenie = document.getElementById('cond-zlecenie').checked;
+      const showHoursWeekend = document.getElementById('cond-hours-weekend').checked;
+      const showImprovement = document.getElementById('cond-improvement').checked;
+      const showTravel = document.getElementById('cond-travel').checked;
+
+      if (lang === 'ua' || lang === 'both') {
+        if (showAge) features.push({ icon: "🙋‍♂️", text: "Молодь віком 18–29 років" });
+        if (showAge65) features.push({ icon: "👤", text: "Вік: 18–65 років" });
+        if (showNeet) features.push({ icon: "🚫", text: "Не працює і не навчається" });
+        if (showZlecenie) features.push({ icon: "💼", text: "Особи, які працюють за договором доручення (umowa zlecenie)" });
+        if (showLocation) features.push({ icon: "📍", text: "Мешканці Вроцлава та околиць" });
+        if (showStipend) features.push({ icon: "💰", text: "Стипендія за період навчання" });
+        if (showMothers) features.push({ icon: "👩‍👦", text: "Для молодих матерів (до 30 років)" });
+        if (showHours) features.push({ icon: "⚡", text: "80 годин практики (ШІ, автоматизація)" });
+        if (showHoursWeekend) features.push({ icon: "⚡", text: "80 год. практики (суботи та неділі)" });
+        if (showCareer) features.push({ icon: "🤝", text: "Індивідуальні кар'єрні консультації" });
+        if (showImprovement) features.push({ icon: "📈", text: "Покращення умов праці (без стажу)" });
+        if (showIntern) features.push({ icon: "💼", text: "Оплачуване стажування (для 50% учасників)" });
+        if (showTravel) features.push({ icon: "🚗", text: "Компенсація витрат на доїзд" });
+        if (showCatering) features.push({ icon: "🍽️", text: "Кейтеринг та обіди" });
+        if (showCert) features.push({ icon: "🎓", text: "Сертифікат про завершення курсу" });
+        if (showLang) features.push({ icon: "🇵🇱", text: "Навчання польською (мін. рівень B1)" });
+        if (showUkr) features.push({ icon: "🇺🇦", text: "Громадяни України зі статусом UKR" });
+      } else { // pl
+        if (showAge) features.push({ icon: "🙋‍♂️", text: "Młodzież 18–29 lat" });
+        if (showAge65) features.push({ icon: "👤", text: "Wiek: 18–65 lat" });
+        if (showNeet) features.push({ icon: "🚫", text: "Osoby niepracujące i nieuczące się" });
+        if (showZlecenie) features.push({ icon: "💼", text: "Osoby pracujące na umowie zlecenie" });
+        if (showLocation) features.push({ icon: "📍", text: "Mieszkańcy Wrocławia i okolic" });
+        if (showStipend) features.push({ icon: "💰", text: "Stypendium szkoleniowe" });
+        if (showMothers) features.push({ icon: "👩‍👦", text: "Dla młodych matek (do 30 r.ż.)" });
+        if (showHours) features.push({ icon: "⚡", text: "80 godzin zajęć praktycznych" });
+        if (showHoursWeekend) features.push({ icon: "⚡", text: "80 godz. praktyki (soboty i niedziele)" });
+        if (showCareer) features.push({ icon: "🤝", text: "Doradztwo zawodowe i pośrednictwo" });
+        if (showImprovement) features.push({ icon: "📈", text: "Ulepszenie warunków pracy (bez stażu)" });
+        if (showIntern) features.push({ icon: "💼", text: "Płatny staż (dla 50% uczestników)" });
+        if (showTravel) features.push({ icon: "🚗", text: "Zwrot kosztów dojazdu" });
+        if (showCatering) features.push({ icon: "🍽️", text: "Catering i obiady" });
+        if (showCert) features.push({ icon: "🎓", text: "Certyfikat ukończenia szkolenia" });
+        if (showLang) features.push({ icon: "🇵🇱", text: "Zajęcia w j. polskim (min. poziom B1)" });
+        if (showUkr) features.push({ icon: "🇺🇦", text: "Obywatele Ukrainy ze statusem UKR" });
+      }
+
+      // Якщо двомовний і хочемо вивести паралельно
+      if (lang === 'both' && features.length > 0) {
+        const bilSplit = document.createElement('div');
+        bilSplit.className = 'bilingual-split';
+        bilSplit.style.width = '100%';
+
+        const titlePl = document.createElement('div');
+        titlePl.className = 'bilingual-col-title';
+        titlePl.innerText = 'WARUNKI UCZESTNICTWA';
+        
+        const titleUa = document.createElement('div');
+        titleUa.className = 'bilingual-col-title';
+        titleUa.innerText = 'УМОВИ УЧАСТІ';
+
+        bilSplit.appendChild(titlePl);
+        bilSplit.appendChild(titleUa);
+
+        if (showAge) { bilSplit.appendChild(createFeatureItem("🙋‍♂️", "Młodzież 18–29 lat")); bilSplit.appendChild(createFeatureItem("🙋‍♂️", "Молодь 18–29 років")); }
+        if (showAge65) { bilSplit.appendChild(createFeatureItem("👤", "Wiek: 18–65 lat")); bilSplit.appendChild(createFeatureItem("👤", "Вік: 18–65 років")); }
+        if (showNeet) { bilSplit.appendChild(createFeatureItem("🚫", "Osoby niepracujące i nieuczące się")); bilSplit.appendChild(createFeatureItem("🚫", "Не працює і не навчається")); }
+        if (showZlecenie) { bilSplit.appendChild(createFeatureItem("💼", "Osoby pracujące na umowie zlecenie")); bilSplit.appendChild(createFeatureItem("💼", "Працюючі за umowa zlecenie")); }
+        if (showLocation) { bilSplit.appendChild(createFeatureItem("📍", "Mieszkańcy Wrocławia i okolic")); bilSplit.appendChild(createFeatureItem("📍", "Мешканці Вроцлава та околиць")); }
+        if (showStipend) { bilSplit.appendChild(createFeatureItem("💰", "Stypendium szkoleniowe")); bilSplit.appendChild(createFeatureItem("💰", "Стипендія за період навчання")); }
+        if (showMothers) { bilSplit.appendChild(createFeatureItem("👩‍👦", "Dla młodych matek (do 30 r.ż.)")); bilSplit.appendChild(createFeatureItem("👩‍👦", "Для молодих матерів")); }
+        if (showHours) { bilSplit.appendChild(createFeatureItem("⚡", "80 godz. praktyki")); bilSplit.appendChild(createFeatureItem("⚡", "80 год. практики")); }
+        if (showHoursWeekend) { bilSplit.appendChild(createFeatureItem("⚡", "80 godz. praktyki (soboty i niedziele)")); bilSplit.appendChild(createFeatureItem("⚡", "80 год. практики (суботи та неділі)")); }
+        if (showCareer) { bilSplit.appendChild(createFeatureItem("🤝", "Doradztwo zawodowe")); bilSplit.appendChild(createFeatureItem("🤝", "Кар'єрні консультації")); }
+        if (showImprovement) { bilSplit.appendChild(createFeatureItem("📈", "Ulepszenie warunków pracy (bez stażu)")); bilSplit.appendChild(createFeatureItem("📈", "Покращення умов праці (без стажу)")); }
+        if (showIntern) { bilSplit.appendChild(createFeatureItem("💼", "Płatny staż (dla 50% os.)")); bilSplit.appendChild(createFeatureItem("💼", "Оплачуване стажування (50% осіб)")); }
+        if (showTravel) { bilSplit.appendChild(createFeatureItem("🚗", "Zwrot kosztów dojazdu")); bilSplit.appendChild(createFeatureItem("🚗", "Компенсація витрат на доїзд")); }
+        if (showCatering) { bilSplit.appendChild(createFeatureItem("🍽️", "Catering i obiady")); bilSplit.appendChild(createFeatureItem("🍽️", "Кейтеринг та обіди")); }
+        if (showCert) { bilSplit.appendChild(createFeatureItem("🎓", "Certyfikat ukończenia szkolenia")); bilSplit.appendChild(createFeatureItem("🎓", "Сертифікат про завершення курсу")); }
+        if (showLang) { bilSplit.appendChild(createFeatureItem("🇵🇱", "Zajęcia w j. polskim (min. B1)")); bilSplit.appendChild(createFeatureItem("🇵🇱", "Навчання польською (мін. B1)")); }
+        if (showUkr) { bilSplit.appendChild(createFeatureItem("🇺🇦", "Ukraińcy ze statusem UKR")); bilSplit.appendChild(createFeatureItem("🇺🇦", "Українці зі статусом UKR")); }
+
+        gridEl.appendChild(bilSplit);
+      } else {
+        features.forEach(f => {
+          gridEl.appendChild(createFeatureItem(f.icon, f.text));
+        });
+      }
+
+      // Адреси
+      const locPreset = document.getElementById('location-select').value;
+      const locCustom = document.getElementById('input-location-custom').value;
+      const locEl = document.getElementById('poster-location-el');
+
+      if (locPreset === 'both') {
+        locEl.innerText = "Wrocław (Legnicka 32 / Kleczkowska 45)";
+      } else if (locPreset === 'legnicka') {
+        locEl.innerText = "Wrocław, ul. Legnicka 32";
+      } else if (locPreset === 'kleczkowska') {
+        locEl.innerText = "Wrocław, ul. Kleczkowska 45";
+      } else {
+        locEl.innerText = locCustom;
+      }
+
+      document.getElementById('custom-location-wrapper').style.display = (locPreset === 'custom') ? 'block' : 'none';
+
+      // Локалізація міток підвалу
+      const lblAddr = document.getElementById('label-address-el');
+      const lblPhone = document.getElementById('label-phone-el');
+      const lblWeb = document.getElementById('label-website-el');
+      
+      if (lblAddr && lblPhone && lblWeb) {
+        if (lang === 'pl') {
+          lblAddr.innerText = '📍 Adres:';
+          lblPhone.innerText = '📞 Tel:';
+          lblWeb.innerText = '🌐 Strona:';
+        } else {
+          lblAddr.innerText = '📍 Адреса:';
+          lblPhone.innerText = '📞 Тел:';
+          lblWeb.innerText = '🌐 Сайт:';
+        }
+      }
+
+      // Контакти
+      document.getElementById('poster-phone-el').innerText = document.getElementById('input-phone').value;
+      document.getElementById('poster-email-el').innerText = document.getElementById('input-email').value;
+      document.getElementById('poster-website-el').innerText = document.getElementById('input-website').value;
+      
+      // Оновлення лічильників символів у бічній панелі
+      const countPl = document.getElementById('char-count-pl');
+      const countUa = document.getElementById('char-count-ua');
+      if (countPl) countPl.innerText = `${titlePl.length}/80`;
+      if (countUa) countUa.innerText = `${titleUa.length}/80`;
+      
+      // Авто-масштабування шрифтів після оновлення тексту
+      updateFontSizeSlider();
+      
+      setTimeout(scaleCanvasToFit, 50);
+    }
+
+    // Створення елемента переваги для сітки
+    function createFeatureItem(icon, text) {
+      const item = document.createElement('div');
+      item.className = 'poster-feature-card';
+      
+      const iconEl = document.createElement('span');
+      iconEl.className = 'feature-card-icon';
+      iconEl.innerText = icon;
+
+      const textEl = document.createElement('span');
+      textEl.className = 'feature-card-text';
+      textEl.innerText = text;
+
+      item.appendChild(iconEl);
+      item.appendChild(textEl);
+      return item;
+    }
+
+    // Зміна формату плаката
+    function updateFormat() {
+      const format = document.querySelector('input[name="format-select"]:checked').value;
+      const canvas = document.getElementById('poster-canvas');
+      
+      canvas.className = '';
+      canvas.classList.add('format-' + format);
+      
+      // Автоматичне встановлення рекомендованого розміру шрифту заголовка для кожного формату
+      const slider = document.getElementById('title-size-slider');
+      if (slider) {
+        if (format === '16-9') slider.value = 46;
+        else if (format === '1-1') slider.value = 48;
+        else if (format === 'fb-ad') slider.value = 38;
+        else if (format === '4-3') slider.value = 42;
+        else if (format === '9-16') slider.value = 64;
+      }
+      
+      updatePhotoLayout();
+      updateText(); // Це оновить тексти та автоматично розрахує фінальні розміри
+      scaleCanvasToFit();
+    }
+
+    // Керування ілюстраціями та фото на плакаті
+    function updatePhotoLayout() {
+      const showPhoto = document.getElementById('toggle-photo').checked;
+      const photoMode = document.getElementById('photo-mode').value;
+      const canvas = document.getElementById('poster-canvas');
+      const splitPhotoEl = document.getElementById('poster-split-photo');
+      const bgPhotoEl = document.getElementById('poster-bg-img-el');
+      
+      const settingsDiv = document.getElementById('photo-settings');
+      const opacityDiv = document.getElementById('photo-opacity-wrapper');
+      
+      if (showPhoto) {
+        settingsDiv.style.display = 'block';
+        
+        if (photoMode === 'split') {
+          canvas.classList.add('with-photo-split');
+          opacityDiv.style.display = 'none';
+          splitPhotoEl.style.display = 'block';
+          bgPhotoEl.style.display = 'none';
+          splitPhotoEl.style.backgroundImage = `url('${currentPhotoUrl}')`;
+        } else { // background mode
+          canvas.classList.remove('with-photo-split');
+          opacityDiv.style.display = 'block';
+          splitPhotoEl.style.display = 'none';
+          bgPhotoEl.style.display = 'block';
+          bgPhotoEl.style.backgroundImage = `url('${currentPhotoUrl}')`;
+          updatePhotoOpacity();
+        }
+      } else {
+        settingsDiv.style.display = 'none';
+        canvas.classList.remove('with-photo-split');
+        splitPhotoEl.style.display = 'none';
+        bgPhotoEl.style.display = 'none';
+      }
+      
+      scaleCanvasToFit();
+    }
+
+    // Регулювання прозорості фонової картинки
+    function updatePhotoOpacity() {
+      const val = document.getElementById('photo-opacity').value;
+      document.getElementById('photo-opacity-val').innerText = val + '%';
+      document.getElementById('poster-bg-img-el').style.opacity = val / 100;
+    }
+
+    // Зміна ілюстрації з пресетів
+    function applyPhotoPreset() {
+      const preset = document.getElementById('photo-preset').value;
+      const fileUpload = document.getElementById('custom-file-upload');
+      
+      if (preset === 'custom') {
+        fileUpload.style.display = 'block';
+      } else {
+        fileUpload.style.display = 'none';
+        currentPhotoUrl = PHOTO_PRESETS[preset];
+        updatePhotoLayout();
+      }
+    }
+
+    // Завантаження власного зображення з ПК
+    function handlePhotoUpload(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('file-name-label').innerText = file.name;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentPhotoUrl = e.target.result;
+          updatePhotoLayout();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Керування маркуванням Євросоюзу
+    function updateMarking() {
+      const show = document.getElementById('toggle-marking').checked;
+      const isBottom = document.getElementById('marking-bottom').checked;
+      const showInfo = document.getElementById('toggle-eu-info').checked;
+      
+      const container = document.getElementById('eu-logos-container-el');
+      const header = document.getElementById('poster-header-el');
+      const footerLogos = document.getElementById('footer-logos-el');
+      const infoText = document.getElementById('eu-info-text-el');
+      
+      if (!container) return;
+
+      if (infoText) {
+        infoText.style.display = (showInfo && show) ? 'block' : 'none';
+      }
+      
+      if (show) {
+        container.style.display = 'flex';
+        if (isBottom) {
+          footerLogos.appendChild(container);
+          container.className = 'eu-logos-footer-small';
+        } else {
+          header.appendChild(container);
+          container.className = 'eu-logos-header';
+        }
+      } else {
+        container.style.display = 'none';
+      }
+      
+      scaleCanvasToFit();
+    }
+
+    // Повзунок розміру заголовка
+    function updateFontSizeSlider() {
+      const baseSize = parseInt(document.getElementById('title-size-slider').value);
+      document.getElementById('title-size-val').innerText = baseSize + 'px';
+      
+      const titlePl = document.getElementById('input-title-pl').value;
+      const titleUa = document.getElementById('input-title-ua').value;
+      const lang = document.querySelector('input[name="lang-select"]:checked').value;
+      
+      let maxLen = 0;
+      if (lang === 'pl') maxLen = titlePl.length;
+      else if (lang === 'ua') maxLen = titleUa.length;
+      else maxLen = Math.max(titlePl.length, titleUa.length);
+      
+      // Інтелектуальне авто-масштабування шрифту у разі довгого тексту
+      let scaleFactor = 1.0;
+      if (maxLen > 70) scaleFactor = 0.65;
+      else if (maxLen > 55) scaleFactor = 0.75;
+      else if (maxLen > 40) scaleFactor = 0.88;
+      
+      const sizePl = Math.round(baseSize * scaleFactor);
+      const sizeUa = Math.round(baseSize * 0.75 * scaleFactor);
+      
+      document.getElementById('poster-title-pl-el').style.fontSize = sizePl + 'px';
+      document.getElementById('poster-title-ua-el').style.fontSize = sizeUa + 'px';
+    }
+
+    // Масштабування canvas під розмір прев'ю-зони
+    function scaleCanvasToFit() {
+      const wrapper = document.getElementById('canvas-scaler');
+      const canvas = document.getElementById('poster-canvas');
+      const previewArea = document.querySelector('.preview-area');
+      
+      const canvasWidth = canvas.offsetWidth;
+      const canvasHeight = canvas.offsetHeight;
+      
+      const areaWidth = previewArea.clientWidth - 80;
+      const areaHeight = previewArea.clientHeight - 80;
+      
+      const scaleX = areaWidth / canvasWidth;
+      const scaleY = areaHeight / canvasHeight;
+      const scale = Math.min(scaleX, scaleY, 1);
+      
+      wrapper.style.transform = `scale(${scale})`;
+      wrapper.style.width = canvasWidth + 'px';
+      wrapper.style.height = canvasHeight + 'px';
+    }
+
+    // Скидання налаштувань форми до дефолту
+    function resetForm() {
+      document.getElementById('course-preset').value = 'ai';
+      document.getElementById('theme-select').value = 'cyberpunk';
+      document.getElementById('photo-preset').value = 'laptop-local';
+      document.getElementById('location-select').value = 'both';
+      
+      document.getElementById('input-org').value = "IBIS Instytut Badań i Szkoleń";
+      document.getElementById('input-badge').value = "БЕЗКОШТОВНО + СТИПЕНДІЯ";
+      document.getElementById('input-phone').value = "+48 882 047 914";
+      document.getElementById('input-email').value = "kontakt@ibisinstytut.pl";
+      document.getElementById('input-website').value = "ibisinstytut.pl";
+      
+      document.getElementById('cond-age').checked = true;
+      document.getElementById('cond-neet').checked = true;
+      document.getElementById('cond-ukr').checked = true;
+      document.getElementById('cond-lang').checked = true;
+      document.getElementById('cond-hours').checked = true;
+      document.getElementById('cond-intern').checked = true;
+      
+      document.getElementById('cond-age-65').checked = false;
+      document.getElementById('cond-zlecenie').checked = false;
+      document.getElementById('cond-hours-weekend').checked = false;
+      document.getElementById('cond-improvement').checked = false;
+      document.getElementById('cond-travel').checked = false;
+      
+      document.getElementById('toggle-photo').checked = true;
+      document.getElementById('photo-mode').value = 'split';
+      document.getElementById('toggle-marking').checked = true;
+      document.getElementById('marking-bottom').checked = true;
+      document.getElementById('toggle-eu-info').checked = true;
+      
+      applyCoursePreset();
+      applyThemePreset();
+      updateLanguage();
+      updatePhotoLayout();
+      updateMarking();
+    }
+
+    // Експорт плаката у високій роздільній здатності (PNG)
+    function exportPoster() {
+      const btn = document.querySelector('.sidebar-footer .btn-primary');
+      if (btn.disabled) return;
+      
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⚙️ Генеруємо...';
+
+      const canvas = document.getElementById('poster-canvas');
+      const format = document.querySelector('input[name="format-select"]:checked').value;
+      const presetName = document.getElementById('course-preset').value;
+      
+      const scaler = document.getElementById('canvas-scaler');
+      scaler.style.transform = 'none';
+      
+      const options = {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false
+      };
+      
+      html2canvas(canvas, options).then(function(renderedCanvas) {
+        scaleCanvasToFit();
+        
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0,10);
+        link.download = `IBIS_Poster_${presetName}_${format}_${dateStr}.png`;
+        link.href = renderedCanvas.toDataURL('image/png');
+        link.click();
+        
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }).catch(err => {
+        scaleCanvasToFit();
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert('Помилка при створенні зображення. Спробуйте ще раз або перевірте завантажені картинки.');
+        console.error(err);
+      });
+    }
+  </script>
+
+</body>
+</html>
